@@ -1,9 +1,6 @@
 {
-  "parser": "@typescript-eslint/parser", 
-  "plugins": [
-    "import",
-    "jest"
-  ],
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["import", "jest"],
   "settings": {
     "import/resolver": {
       "node": {
