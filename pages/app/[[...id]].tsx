@@ -9,6 +9,7 @@ import FolderPane from '../../components/folderPane';
 import DocPane from '../../components/docPane';
 import NewFolderDialog from '../../components/newFolderDialog';
 import { getSession, useSession } from 'next-auth/client';
+import { folder, doc, connectToDB } from '../../db';
 
 const App: FC<{ folders?: any[]; activeFolder?: any; activeDoc?: any; activeDocs?: any[] }> = ({
   folders,
@@ -62,7 +63,7 @@ const App: FC<{ folders?: any[]; activeFolder?: any; activeDoc?: any; activeDocs
           <NewFolderButton onClick={() => setIsShown(true)} />
         </Pane>
         <Pane>
-          <FolderList folders={[{ id: '1', title: 'x' }]} />{' '}
+          <FolderList folders={folders} />{' '}
         </Pane>
       </Pane>
       <Pane marginLeft={300} width="calc(100vw - 300px)" height="100vh" overflowY="auto" position="relative">
@@ -75,26 +76,35 @@ const App: FC<{ folders?: any[]; activeFolder?: any; activeDoc?: any; activeDocs
 };
 
 App.defaultProps = {
-  folders: [],
+  folders: [{ id: 'none', title: 'New folder' }],
 };
 
-// export async function getServerSideProps(ctx) {
-//   const session = await getSession(ctx);
+export async function getServerSideProps(ctx) {
+  const session = await getSession(ctx);
+  if (!session) {
+    return {
+      props: { session },
+    };
+  }
 
-//   return {
-//     props: { session },
-//   };
-// }
+  const props: any = {};
 
-/**
- * Catch all handler. Must handle all different page
- * states.
- * 1. Folders - none selected
- * 2. Folders => Folder selected
- * 3. Folders => Folder selected => Document selected
- *
- * An unauth user should not be able to access this page.
- *
- * @param context
- */
+  const { db } = await connectToDB();
+  const folders = await folder.getFolders(db, session.user.id);
+
+  // if params are '/app/folder' or '/app/folder/doc'
+  if (ctx.params.id.length) {
+    props.activeFolder = folders.find((f) => f.id === ctx.params.id[0]);
+    props.activeDocs = await doc.getDocsByFolder(db, props.activeFolder._id);
+
+    if (ctx.params.id.length > 1) {
+      props.activeDoc = props.activeDocs.find((d) => d._id === ctx.params.id[2]);
+    }
+  }
+
+  return {
+    props,
+  };
+}
+
 export default App;
