@@ -10,6 +10,7 @@ import DocPane from '../../components/docPane';
 import NewFolderDialog from '../../components/newFolderDialog';
 import { getSession, useSession } from 'next-auth/client';
 import { folder, doc, connectToDB } from '../../db';
+import { UserSession } from '../../types';
 
 const App: FC<{ folders?: any[]; activeFolder?: any; activeDoc?: any; activeDocs?: any[] }> = ({
   folders,
@@ -76,29 +77,31 @@ const App: FC<{ folders?: any[]; activeFolder?: any; activeDoc?: any; activeDocs
 };
 
 App.defaultProps = {
-  folders: [{ id: 'none', title: 'New folder' }],
+  folders: [],
 };
 
-export async function getServerSideProps(ctx) {
-  const session = await getSession(ctx);
-  if (!session) {
+export async function getServerSideProps(context) {
+  const session: { user: UserSession } = await getSession(context);
+  if (!session || !session.user) {
     return {
-      props: { session },
+      props: {},
     };
   }
 
-  const props: any = {};
-
+  const props: any = { session };
   const { db } = await connectToDB();
   const folders = await folder.getFolders(db, session.user.id);
+  props.folders = folders;
 
   // if params are '/app/folder' or '/app/folder/doc'
-  if (ctx.params.id.length) {
-    props.activeFolder = folders.find((f) => f.id === ctx.params.id[0]);
+  if (context.params.id) {
+    props.activeFolder = folders.find((f) => f._id === context.params.id[0]);
     props.activeDocs = await doc.getDocsByFolder(db, props.activeFolder._id);
 
-    if (ctx.params.id.length > 1) {
-      props.activeDoc = props.activeDocs.find((d) => d._id === ctx.params.id[2]);
+    const activeDocId = context.params.id[1];
+
+    if (activeDocId) {
+      props.activeDoc = await doc.getOneDoc(db, activeDocId);
     }
   }
 

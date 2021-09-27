@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import Providers from 'next-auth/providers';
+import { connectToDB, doc, folder } from '../../../db';
 
 export default (req, res) =>
   NextAuth(req, res, {
@@ -18,5 +19,48 @@ export default (req, res) =>
     database: process.env.DATABASE_URL,
     pages: {
       signIn: '/signin',
+    },
+    callbacks: {
+      async session(session, user) {
+        session.user.id = user.id;
+        return session;
+      },
+      async jwt(tokenPayload, user, account, profile, isNewUser) {
+        const { db } = await connectToDB();
+
+        if (isNewUser) {
+          const personalFolder = await folder.createFolder(db, {
+            createdBy: `${user._id}`,
+            name: 'Personal Folder',
+          });
+
+          console.log(personalFolder);
+
+          await doc.createDoc(db, {
+            createdBy: `${user._id}`,
+            folder: personalFolder._id,
+            name: 'Start here',
+            content: {
+              time: 1556098174501,
+              blocks: [
+                {
+                  type: 'header',
+                  data: {
+                    text: 'Some default content',
+                    level: 2,
+                  },
+                },
+              ],
+              version: '2.12.4',
+            },
+          });
+        }
+
+        if (tokenPayload && user) {
+          return { ...tokenPayload, id: `${user._id}` };
+        }
+
+        return tokenPayload;
+      },
     },
   });

@@ -1,10 +1,10 @@
-import { Db, MongoClient } from 'mongodb';
+import { MongoClient } from 'mongodb';
 
 global.mongo = global.mongo || {};
 
 export const connectToDB = async () => {
-  if (!global.mongo) {
-    const client = new MongoClient(process.env.DATABASE_URL, {
+  if (!global.mongo.client) {
+    global.mongo.client = new MongoClient(process.env.DATABASE_URL, {
       useUnifiedTopology: true,
       useNewUrlParser: true,
       bufferMaxEntries: 0,
@@ -12,8 +12,6 @@ export const connectToDB = async () => {
     });
 
     await global.mongo.client.connect();
-
-    global.mongo.client = client;
   }
 
   const db = global.mongo.client.db('known');
