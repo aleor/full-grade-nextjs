@@ -30,14 +30,12 @@ export default (req, res) =>
 
         if (isNewUser) {
           const personalFolder = await folder.createFolder(db, {
-            createdBy: `${user._id}`,
+            createdBy: `${user.id}`,
             name: 'Personal Folder',
           });
 
-          console.log(personalFolder);
-
           await doc.createDoc(db, {
-            createdBy: `${user._id}`,
+            createdBy: `${user.id}`,
             folder: personalFolder._id,
             name: 'Start here',
             content: {
@@ -57,7 +55,7 @@ export default (req, res) =>
         }
 
         if (tokenPayload && user) {
-          return { ...tokenPayload, id: `${user._id}` };
+          return { ...tokenPayload, id: `${user.id}` };
         }
 
         return tokenPayload;
