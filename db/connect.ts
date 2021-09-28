@@ -14,7 +14,7 @@ export const connectToDB = async () => {
     await global.mongo.client.connect();
   }
 
-  const db = global.mongo.client.db('known');
+  const db = global.mongo.client.db(process.env.DB_NAME);
 
   return { db, dbClient: global.mongo.client };
 };
